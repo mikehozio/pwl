@@ -1,6 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 import os
+from math import lcm
 
 def generate_graphs():
     """Generate player graphs based on guess distribution and scores."""
@@ -8,9 +9,19 @@ def generate_graphs():
     with open('players.json', 'r') as f:
         players_data = json.load(f)
 
-    # Find the maximum count across all players for consistent x-axis
+    # Filter to only players who have contributed (have at least one guess)
+    active_players = {
+        name: info for name, info in players_data.items()
+        if sum(info['guess_distribution'].values()) > 0
+    }
+
+    if not active_players:
+        print("No active players found. Skipping graph generation.")
+        return
+
+    # Find the maximum count across active players for consistent x-axis
     max_count = 0
-    for player_name, player_info in players_data.items():
+    for player_name, player_info in active_players.items():
         max_count = max(max_count, max(player_info['guess_distribution'].values()))
 
     # Create output directory if it doesn't exist
@@ -29,7 +40,8 @@ def generate_graphs():
 
         # Create horizontal bar graph (switched axes)
         ax.barh(guess_numbers, counts, color='steelblue', edgecolor='black')
-        ax.set_title(f"{player_name} (Score: {player_info['score']})", fontsize=20, fontweight='bold')
+        wins = player_info.get('wins', 0)
+        ax.set_title(f"{player_name} (Score: {player_info['score']}, {wins} W's)", fontsize=20, fontweight='bold')
         ax.set_ylabel('Guess Number', fontsize=16)
         ax.set_xlabel('Count', fontsize=16)
         ax.set_xlim(0, max_count + 1)  # Consistent x-axis with some headroom
@@ -45,7 +57,7 @@ def generate_graphs():
 
     # Generate individual 1920x1080 images for each player
     print("Generating individual player graphs...")
-    for player_name, player_info in players_data.items():
+    for player_name, player_info in active_players.items():
         fig, ax = plt.subplots(figsize=(19.2, 10.8))  # 1920x1080 at 100 DPI
         create_player_graph(ax, player_name, player_info, max_count)
         plt.tight_layout()
@@ -57,25 +69,40 @@ def generate_graphs():
         print(f"  Saved: {filepath}")
         plt.close()
 
-    # Generate combined image with all 7 graphs (3 on top row, 4 on bottom)
+    # Generate combined image with dynamic layout
     print("\nGenerating combined graph...")
     fig = plt.figure(figsize=(19.2, 10.8))  # 1920x1080 at 100 DPI
 
     # Sort players by score (highest to lowest)
-    players_list = sorted(players_data.items(), key=lambda x: x[1]['score'], reverse=True)
+    players_list = sorted(active_players.items(), key=lambda x: x[1]['score'], reverse=True)
+    num_players = len(players_list)
 
-    # Use a 2x12 grid to allow 3 graphs on top (each spanning 4 cols) and 4 on bottom (each spanning 3 cols)
-    # Top row (3 players) - each spans 4 columns to fill the width
-    for i in range(3):
-        ax = plt.subplot2grid((2, 12), (0, i * 4), colspan=4)
-        player_name, player_info = players_list[i]
+    if num_players == 1:
+        # Single player: one centered graph
+        ax = fig.add_subplot(1, 1, 1)
+        player_name, player_info = players_list[0]
         create_player_graph(ax, player_name, player_info, max_count)
+    else:
+        # Dynamic 2-row layout: top row gets floor(n/2), bottom row gets ceil(n/2)
+        top_count = num_players // 2
+        bottom_count = num_players - top_count
 
-    # Bottom row (4 players) - each spans 3 columns to fill the width
-    for i in range(4):
-        ax = plt.subplot2grid((2, 12), (1, i * 3), colspan=3)
-        player_name, player_info = players_list[3 + i]
-        create_player_graph(ax, player_name, player_info, max_count)
+        # Use LCM of top_count and bottom_count for grid columns to allow even spacing
+        grid_cols = lcm(top_count, bottom_count)
+
+        # Top row
+        top_colspan = grid_cols // top_count
+        for i in range(top_count):
+            ax = plt.subplot2grid((2, grid_cols), (0, i * top_colspan), colspan=top_colspan)
+            player_name, player_info = players_list[i]
+            create_player_graph(ax, player_name, player_info, max_count)
+
+        # Bottom row
+        bottom_colspan = grid_cols // bottom_count
+        for i in range(bottom_count):
+            ax = plt.subplot2grid((2, grid_cols), (1, i * bottom_colspan), colspan=bottom_colspan)
+            player_name, player_info = players_list[top_count + i]
+            create_player_graph(ax, player_name, player_info, max_count)
 
     plt.tight_layout()
     plt.savefig('player_graphs/all_players_combined.png', dpi=100, bbox_inches='tight')

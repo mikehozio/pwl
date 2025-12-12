@@ -3,10 +3,73 @@ import re._casefix
 from generate_graphs import generate_graphs
 
 
+def score_standard(daily_scores, PLAYERS):
+    """Standard scoring: supports ties with points for 2-way and 3-way ties.
+    Outright winner gets bounty (minimum 3 points)."""
+    bounty = 1
+
+    for wordle_number, scores in sorted(daily_scores.items()):
+        if not scores:
+            continue
+
+        # Find the minimum score for this day
+        min_score = min(scores.values())
+        winners = [player for player, score in scores.items() if score == min_score]
+
+        # Award points based on number of winners
+        num_winners = len(winners)
+
+        if num_winners == 1:
+            # Outright winner gets bounty (minimum 3 points)
+            points = max(bounty, 3)
+            PLAYERS[winners[0]]["score"] += points
+            PLAYERS[winners[0]]["wins"] += 1
+            bounty = 1  # Reset bounty
+        elif num_winners == 2:
+            # 2-way tie: 2 points each
+            for winner in winners:
+                PLAYERS[winner]["score"] += 2
+            bounty += 1  # Increase bounty
+        elif num_winners == 3:
+            # 3-way tie: 1 point each
+            for winner in winners:
+                PLAYERS[winner]["score"] += 1
+            bounty += 1  # Increase bounty
+        else:
+            # 4+ way tie: no points
+            bounty += 1  # Increase bounty
+
+    return bounty
+
+
+def score_skins(daily_scores, PLAYERS):
+    """Skins scoring: only outright winners get paid.
+    Bounty resets to 1 for each win, no minimum for an outright win."""
+    bounty = 1
+
+    for wordle_number, scores in sorted(daily_scores.items()):
+        if not scores:
+            continue
+
+        # Find the minimum score for this day
+        min_score = min(scores.values())
+        winners = [player for player, score in scores.items() if score == min_score]
+
+        if len(winners) == 1:
+            # Outright winner gets the bounty (no minimum)
+            PLAYERS[winners[0]]["score"] += bounty
+            PLAYERS[winners[0]]["wins"] += 1
+            bounty = 1  # Reset bounty
+        else:
+            # Any tie: no points awarded, bounty increases
+            bounty += 1
+
+    return bounty
+
+
 def pwl(PLAYERS):
     # Dictionary to store daily scores: {wordle_number: {player_name: guess_count}}
     daily_scores = {}
-    bounty = 1
 
     with open("convo.txt", "r", encoding="utf-8") as file:
         player_name = ''
@@ -43,35 +106,8 @@ def pwl(PLAYERS):
                 player_name = line.strip()
 
     # Calculate points based on daily scores
-    for wordle_number, scores in sorted(daily_scores.items()):
-        if not scores:
-            continue
-        
-        # Find the minimum score for this day
-        min_score = min(scores.values())
-        winners = [player for player, score in scores.items() if score == min_score]
-        
-        # Award points based on number of winners
-        num_winners = len(winners)
-        
-        if num_winners == 1:
-            # Outright winner gets bounty (minimum 3 points)
-            points = max(bounty, 3)
-            PLAYERS[winners[0]]["score"] += points
-            bounty = 1  # Reset bounty
-        elif num_winners == 2:
-            # 2-way tie: 2 points each
-            for winner in winners:
-                PLAYERS[winner]["score"] += 2
-            bounty += 1  # Increase bounty
-        elif num_winners == 3:
-            # 3-way tie: 1 point each
-            for winner in winners:
-                PLAYERS[winner]["score"] += 1
-            bounty += 1  # Increase bounty
-        else:
-            # 4+ way tie: no points
-            bounty += 1  # Increase bounty
+    #bounty = score_standard(daily_scores, PLAYERS)
+    bounty = score_skins(daily_scores, PLAYERS)
 
     # Save updated player data
     with open("players.json", "w") as file:
@@ -82,7 +118,8 @@ def pwl(PLAYERS):
     print(f"\nFinal Bounty: {bounty}")
     print("\nPlayer Scores:")
     for player, data in sorted(PLAYERS.items(), key=lambda x: x[1]["score"], reverse=True):
-        print(f"{player}: {data['score']} points")
+        wins = data.get('wins', 0)
+        print(f"{player}: {data['score']} points, {wins} W's")
 
     print("\nGuess Distributions:")
     for player, data in PLAYERS.items():
@@ -99,6 +136,7 @@ def main():
         PLAYERS = json.load(open("players.json"))
         for player in PLAYERS.values():
             player["score"] = 0
+            player["wins"] = 0
             player["guess_distribution"] = {str(i): 0 for i in range(1, 7)}
         with open("players.json", "w") as file:
             json.dump(PLAYERS, file, indent=4)
