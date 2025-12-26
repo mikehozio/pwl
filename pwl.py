@@ -106,8 +106,8 @@ def pwl(PLAYERS):
                 player_name = line.strip()
 
     # Calculate points based on daily scores
-    #bounty = score_standard(daily_scores, PLAYERS)
-    bounty = score_skins(daily_scores, PLAYERS)
+    bounty = score_standard(daily_scores, PLAYERS)
+    #bounty = score_skins(daily_scores, PLAYERS)
 
     # Save updated player data
     with open("players.json", "w") as file:

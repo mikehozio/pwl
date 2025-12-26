@@ -1,6 +1,6 @@
 {
     "Dustin Jones": {
-        "score": 6,
+        "score": 21,
         "guess_distribution": {
             "1": 0,
             "2": 1,
@@ -12,7 +12,7 @@
         "wins": 5
     },
     "Murphy Rhodes": {
-        "score": 16,
+        "score": 38,
         "guess_distribution": {
             "1": 0,
             "2": 2,
@@ -24,7 +24,7 @@
         "wins": 9
     },
     "Jack Pigou": {
-        "score": 9,
+        "score": 24,
         "guess_distribution": {
             "1": 0,
             "2": 2,
@@ -72,7 +72,7 @@
         "wins": 0
     },
     "Mike Horan": {
-        "score": 3,
+        "score": 22,
         "guess_distribution": {
             "1": 0,
             "2": 0,
