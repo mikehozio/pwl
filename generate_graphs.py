@@ -1,9 +1,174 @@
 import json
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator, MultipleLocator
 import os
+import re
 from math import lcm
 
-def generate_graphs():
+# Distinct colors for players
+PLAYER_COLORS = [
+    '#1f77b4',  # blue
+    '#ff7f0e',  # orange
+    '#2ca02c',  # green
+    '#d62728',  # red
+    '#9467bd',  # purple
+    '#8c564b',  # brown
+    '#e377c2',  # pink
+    '#7f7f7f',  # gray
+    '#bcbd22',  # olive
+    '#17becf',  # cyan
+]
+
+
+def parse_daily_scores(players_data):
+    """Parse convo.txt to get daily scores for each player."""
+    daily_scores = {}
+
+    with open("convo.txt", "r", encoding="utf-8") as file:
+        player_name = ''
+        for line in file:
+            if player_name != '':
+                if line.strip().startswith("Wordle"):
+                    match = re.match(r"Wordle ([\d,]+) ([X\d])/6", line.strip())
+                    if match:
+                        wordle_number = match.group(1)
+                        score_str = match.group(2)
+
+                        if score_str == 'X':
+                            score = 7
+                        else:
+                            score = int(score_str)
+
+                        if wordle_number not in daily_scores:
+                            daily_scores[wordle_number] = {}
+                        daily_scores[wordle_number][player_name] = score
+
+                    player_name = ''
+                    continue
+
+            if line.strip() in players_data:
+                player_name = line.strip()
+
+    return daily_scores
+
+
+def calculate_score_progression(daily_scores, active_players, scoring_mode='skins'):
+    """Calculate cumulative score progression for each player over time."""
+    # Initialize score tracking for each active player
+    player_scores = {name: [] for name in active_players}
+    cumulative_scores = {name: 0 for name in active_players}
+    wordle_numbers = []
+    bounty = 1
+
+    for wordle_number, scores in sorted(daily_scores.items()):
+        if not scores:
+            continue
+
+        wordle_numbers.append(wordle_number)
+
+        # Find minimum score and winners for this day
+        min_score = min(scores.values())
+        winners = [player for player, score in scores.items() if score == min_score]
+        num_winners = len(winners)
+
+        if scoring_mode == 'standard':
+            # Standard scoring: ties get points, outright win has minimum 3
+            if num_winners == 1:
+                points = max(bounty, 3)
+                if winners[0] in active_players:
+                    cumulative_scores[winners[0]] += points
+                bounty = 1
+            elif num_winners == 2:
+                for winner in winners:
+                    if winner in active_players:
+                        cumulative_scores[winner] += 2
+                bounty += 1
+            elif num_winners == 3:
+                for winner in winners:
+                    if winner in active_players:
+                        cumulative_scores[winner] += 1
+                bounty += 1
+            else:
+                bounty += 1
+        else:
+            # Skins scoring: only outright winners get paid
+            if num_winners == 1:
+                if winners[0] in active_players:
+                    cumulative_scores[winners[0]] += bounty
+                bounty = 1
+            else:
+                bounty += 1
+
+        # Record cumulative scores for all active players at this point
+        for name in active_players:
+            player_scores[name].append(cumulative_scores[name])
+
+    return wordle_numbers, player_scores
+
+
+def generate_score_over_time_graph(active_players, daily_scores, scoring_mode='skins'):
+    """Generate a line graph showing score progression over time for each player."""
+    wordle_numbers, player_scores = calculate_score_progression(daily_scores, active_players, scoring_mode)
+
+    if not wordle_numbers:
+        print("No daily data found for score over time graph.")
+        return
+
+    fig, ax = plt.subplots(figsize=(19.2, 10.8))
+
+    # Sort players by final score for consistent legend ordering
+    sorted_players = sorted(active_players.items(), key=lambda x: x[1]['score'], reverse=True)
+
+    # Plot each player's score progression
+    lines = []
+    labels = []
+    for i, (player_name, player_info) in enumerate(sorted_players):
+        color = PLAYER_COLORS[i % len(PLAYER_COLORS)]
+        line, = ax.plot(range(len(wordle_numbers)), player_scores[player_name],
+                       color=color, linewidth=2.5, marker='o', markersize=4, label=player_name)
+        lines.append(line)
+        labels.append(player_name)
+
+    # Configure axes
+    ax.set_xlabel('Wordle Number', fontsize=14)
+    ax.set_ylabel('Points', fontsize=14)
+    ax.set_title('Score Progression Over Time', fontsize=20, fontweight='bold')
+
+    # Set x-axis ticks to show wordle numbers
+    # Show fewer ticks if there are many days
+    num_days = len(wordle_numbers)
+    if num_days <= 15:
+        tick_indices = range(num_days)
+    else:
+        step = max(1, num_days // 10)
+        tick_indices = range(0, num_days, step)
+
+    ax.set_xticks([i for i in tick_indices])
+    ax.set_xticklabels([wordle_numbers[i] for i in tick_indices], rotation=45, ha='right')
+
+    ax.tick_params(axis='both', labelsize=12)
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+
+    # Add gridlines for every integer on both axes
+    ax.xaxis.set_minor_locator(MultipleLocator(1))
+    ax.yaxis.set_minor_locator(MultipleLocator(1))
+    ax.grid(True, which='major', alpha=0.5)
+    ax.grid(True, which='minor', alpha=0.2)
+
+    # Add legend at the bottom
+    ax.legend(lines, labels, loc='upper center', bbox_to_anchor=(0.5, -0.12),
+              ncol=min(len(sorted_players), 5), fontsize=12, frameon=True)
+
+    plt.tight_layout()
+    plt.subplots_adjust(bottom=0.2)  # Make room for legend at bottom
+
+    filepath = 'player_graphs/score_over_time.png'
+    plt.savefig(filepath, dpi=100, bbox_inches='tight')
+    print(f"  Saved: {filepath}")
+    plt.close()
+
+
+def generate_graphs(scoring_mode='skins'):
     """Generate player graphs based on guess distribution and scores."""
     # Read the players data
     with open('players.json', 'r') as f:
@@ -108,6 +273,11 @@ def generate_graphs():
     plt.savefig('player_graphs/all_players_combined.png', dpi=100, bbox_inches='tight')
     print("  Saved: player_graphs/all_players_combined.png")
     plt.close()
+
+    # Generate score over time line graph
+    print("\nGenerating score over time graph...")
+    daily_scores = parse_daily_scores(players_data)
+    generate_score_over_time_graph(active_players, daily_scores, scoring_mode)
 
     print("\nAll graphs generated successfully!")
 

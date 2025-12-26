@@ -106,8 +106,10 @@ def pwl(PLAYERS):
                 player_name = line.strip()
 
     # Calculate points based on daily scores
-    bounty = score_standard(daily_scores, PLAYERS)
-    #bounty = score_skins(daily_scores, PLAYERS)
+    # Change scoring_mode to match which function you use: 'standard' or 'skins'
+    scoring_mode = 'skins'
+    #bounty = score_standard(daily_scores, PLAYERS)
+    bounty = score_skins(daily_scores, PLAYERS)
 
     # Save updated player data
     with open("players.json", "w") as file:
@@ -128,7 +130,7 @@ def pwl(PLAYERS):
             count = data["guess_distribution"][str(guess_num)]
             print(f"  {guess_num}: {count}")
 
-    generate_graphs()
+    generate_graphs(scoring_mode)
 
 def main():
     clean = input("Do you want to clean scores before processing? (y/n): ").strip().lower()
