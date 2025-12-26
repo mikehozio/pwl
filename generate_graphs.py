@@ -56,6 +56,7 @@ def calculate_score_progression(daily_scores, active_players, scoring_mode='skin
     """Calculate cumulative score progression for each player over time."""
     # Initialize score tracking for each active player
     player_scores = {name: [] for name in active_players}
+    player_submitted = {name: [] for name in active_players}  # Track if player submitted each day
     cumulative_scores = {name: 0 for name in active_players}
     wordle_numbers = []
     bounty = 1
@@ -99,16 +100,17 @@ def calculate_score_progression(daily_scores, active_players, scoring_mode='skin
             else:
                 bounty += 1
 
-        # Record cumulative scores for all active players at this point
+        # Record cumulative scores and submission status for all active players
         for name in active_players:
             player_scores[name].append(cumulative_scores[name])
+            player_submitted[name].append(name in scores)
 
-    return wordle_numbers, player_scores
+    return wordle_numbers, player_scores, player_submitted
 
 
 def generate_score_over_time_graph(active_players, daily_scores, scoring_mode='skins'):
     """Generate a line graph showing score progression over time for each player."""
-    wordle_numbers, player_scores = calculate_score_progression(daily_scores, active_players, scoring_mode)
+    wordle_numbers, player_scores, player_submitted = calculate_score_progression(daily_scores, active_players, scoring_mode)
 
     if not wordle_numbers:
         print("No daily data found for score over time graph.")
@@ -124,10 +126,25 @@ def generate_score_over_time_graph(active_players, daily_scores, scoring_mode='s
     labels = []
     for i, (player_name, player_info) in enumerate(sorted_players):
         color = PLAYER_COLORS[i % len(PLAYER_COLORS)]
-        line, = ax.plot(range(len(wordle_numbers)), player_scores[player_name],
-                       color=color, linewidth=2.5, marker='o', markersize=4, label=player_name)
+        x_vals = list(range(len(wordle_numbers)))
+        y_vals = player_scores[player_name]
+        submitted = player_submitted[player_name]
+
+        # Plot the line without markers first
+        line, = ax.plot(x_vals, y_vals, color=color, linewidth=2.5, label=player_name)
         lines.append(line)
         labels.append(player_name)
+
+        # Plot markers separately: circles for submitted, X for missed
+        submitted_x = [x for x, s in zip(x_vals, submitted) if s]
+        submitted_y = [y for y, s in zip(y_vals, submitted) if s]
+        missed_x = [x for x, s in zip(x_vals, submitted) if not s]
+        missed_y = [y for y, s in zip(y_vals, submitted) if not s]
+
+        if submitted_x:
+            ax.scatter(submitted_x, submitted_y, color=color, marker='o', s=30, zorder=5)
+        if missed_x:
+            ax.scatter(missed_x, missed_y, color=color, marker='x', s=50, linewidths=2, zorder=5)
 
     # Configure axes
     ax.set_xlabel('Wordle Number', fontsize=14)
