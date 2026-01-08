@@ -89,13 +89,20 @@ def pwl(PLAYERS):
                         else:
                             score = int(score_str)
                         
-                        # Track guess distribution
-                        if score <= 6:
-                            PLAYERS[player_name]["guess_distribution"][str(score)] += 1
-                        
                         # Track daily scores for point calculation
                         if wordle_number not in daily_scores:
                             daily_scores[wordle_number] = {}
+
+                        # If player already submitted for this Wordle, undo old guess distribution
+                        if player_name in daily_scores[wordle_number]:
+                            old_score = daily_scores[wordle_number][player_name]
+                            if old_score <= 6:
+                                PLAYERS[player_name]["guess_distribution"][str(old_score)] -= 1
+
+                        # Track guess distribution
+                        if score <= 6:
+                            PLAYERS[player_name]["guess_distribution"][str(score)] += 1
+
                         daily_scores[wordle_number][player_name] = score
                         
                     player_name = ''
