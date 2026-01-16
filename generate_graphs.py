@@ -223,7 +223,8 @@ def generate_graphs(scoring_mode='skins'):
         # Create horizontal bar graph (switched axes)
         ax.barh(guess_numbers, counts, color='steelblue', edgecolor='black')
         wins = player_info.get('wins', 0)
-        ax.set_title(f"{player_name} (Score: {player_info['score']}, {wins} W's)", fontsize=20, fontweight='bold')
+        best_scores = player_info.get('best_scores', 0)
+        ax.set_title(f"{player_name} (Score: {player_info['score']}, {wins} W's, {best_scores} Bests)", fontsize=20, fontweight='bold')
         ax.set_ylabel('Guess Number', fontsize=16)
         ax.set_xlabel('Count', fontsize=16)
         ax.set_xlim(0, max_count + 1)  # Consistent x-axis with some headroom

@@ -9,7 +9,8 @@
             "5": 10,
             "6": 3
         },
-        "wins": 5
+        "wins": 5,
+        "best_scores": 15
     },
     "Murphy Rhodes": {
         "score": 21,
@@ -21,7 +22,8 @@
             "5": 8,
             "6": 5
         },
-        "wins": 12
+        "wins": 12,
+        "best_scores": 22
     },
     "Jack Pigou": {
         "score": 11,
@@ -33,7 +35,8 @@
             "5": 10,
             "6": 3
         },
-        "wins": 7
+        "wins": 7,
+        "best_scores": 14
     },
     "Joe Balfe": {
         "score": 0,
@@ -45,7 +48,8 @@
             "5": 0,
             "6": 0
         },
-        "wins": 0
+        "wins": 0,
+        "best_scores": 0
     },
     "Riley Hollenbach": {
         "score": 0,
@@ -57,7 +61,8 @@
             "5": 0,
             "6": 0
         },
-        "wins": 0
+        "wins": 0,
+        "best_scores": 0
     },
     "Jade Balfe": {
         "score": 0,
@@ -69,7 +74,8 @@
             "5": 0,
             "6": 0
         },
-        "wins": 0
+        "wins": 0,
+        "best_scores": 0
     },
     "Mike Horan": {
         "score": 9,
@@ -81,6 +87,7 @@
             "5": 15,
             "6": 2
         },
-        "wins": 6
+        "wins": 6,
+        "best_scores": 19
     }
 }

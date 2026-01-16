@@ -19,6 +19,10 @@ def score_standard(daily_scores, PLAYERS):
         # Award points based on number of winners
         num_winners = len(winners)
 
+        # Track best_scores for all winners (including ties)
+        for winner in winners:
+            PLAYERS[winner]["best_scores"] += 1
+
         if num_winners == 1:
             # Outright winner gets bounty (minimum 3 points)
             points = max(bounty, 3)
@@ -54,6 +58,10 @@ def score_skins(daily_scores, PLAYERS):
         # Find the minimum score for this day
         min_score = min(scores.values())
         winners = [player for player, score in scores.items() if score == min_score]
+
+        # Track best_scores for all winners (including ties)
+        for winner in winners:
+            PLAYERS[winner]["best_scores"] += 1
 
         if len(winners) == 1:
             # Outright winner gets the bounty (no minimum)
@@ -128,7 +136,8 @@ def pwl(PLAYERS):
     print("\nPlayer Scores:")
     for player, data in sorted(PLAYERS.items(), key=lambda x: x[1]["score"], reverse=True):
         wins = data.get('wins', 0)
-        print(f"{player}: {data['score']} points, {wins} W's")
+        best_scores = data.get('best_scores', 0)
+        print(f"{player}: {data['score']} points, {wins} W's, {best_scores} best scores")
 
     print("\nGuess Distributions:")
     for player, data in PLAYERS.items():
@@ -146,6 +155,7 @@ def main():
         for player in PLAYERS.values():
             player["score"] = 0
             player["wins"] = 0
+            player["best_scores"] = 0
             player["guess_distribution"] = {str(i): 0 for i in range(1, 7)}
         with open("players.json", "w") as file:
             json.dump(PLAYERS, file, indent=4)
