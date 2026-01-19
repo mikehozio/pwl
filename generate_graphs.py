@@ -34,8 +34,8 @@ def parse_daily_scores(players_data):
                         wordle_number = match.group(1)
                         score_str = match.group(2)
 
-                        if score_str == 'X':
-                            score = 7
+                        if score_str == 'X' or score_str == '0':
+                            score = 7  # Use 7 for failed attempts
                         else:
                             score = int(score_str)
 

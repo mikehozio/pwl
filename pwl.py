@@ -92,7 +92,7 @@ def pwl(PLAYERS):
                         score_str = match.group(2)
                         
                         # Handle failed attempts (X/6)
-                        if score_str == 'X':
+                        if score_str == 'X' or score_str == '0':
                             score = 7  # Use 7 for failed attempts
                         else:
                             score = int(score_str)
